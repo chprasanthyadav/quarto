@@ -1,0 +1,208 @@
+---
+title: "![R](R) UNICEF"
+author: "Prasanth Yadav Ch"
+date: "04/27/2023"
+format: html
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+</style>
+
+ <style>
+ body{
+ text-align: justify}
+ </style>
+
+## What proportion of schools has basic sanitation?
+ 
+- The **world map chart** shows the average proportion of schools with basic sanitation across different countries. Upon further exploration, the **scatter plot** shows that countries with greater average GDP per capita have a better proportion of schools with basic sanitation than countries with lower average GDP per capita. 
+
+- When analyzed further, from the **time series chart**, it can be found that the average life expectancy and the average proportion of schools with basic sanitation are positively correlated because a lack of basic sanitation can increase the transmission of diseases. When the average life expectancy at birth and the average proportion of schools with basic sanitation is observed across the years, as the proportion of schools with basic sanitation decreased, the average life expectancy also reduced. 
+
+- Lastly, the **bar chart** highlights the disparities in the proportion of schools with basic sanitation across different continents.  
+
+Therefore, ***it is high time that the public should focus on improving basic sanitation in schools to achieve greater life expectancy***.
+
+## World map chart
+
+In the below world map, *the lighter the blue color's intensity higher the proportion of schools with basic sanitation*. The legend name *value indicates the avg proportion of schools with basic sanitation*  
+ 
+```{r}
+#| echo: false
+#| include: false
+library(ggplot2)
+library(dplyr)
+library(maps)
+png("world_map.png", width=30000, height=600) # Set width to 1200 pixels
+map("world")
+dev.off() # Close the output device
+
+ 
+# Load data
+indicator1 <- read.csv("unicef_indicator_1.csv")
+ 
+ 
+grouped_data <- indicator1 %>%
+  group_by(country) %>%
+  summarize(value = mean(obs_value))
+ 
+world_map <- map_data("world")
+ 
+map_res <- full_join(world_map, grouped_data, by = c("region" = "country"))
+ 
+res <- ggplot(data = map_res) +
+  aes(x = long, y = lat, group = group, fill = value) +
+  geom_polygon()
+
+```
+ 
+```{r}
+#| echo: false
+res
+```
+ 
+## Scatter Plot with regression line 
+
+The scatterplot identifies that *no country with above 40,000$ GDP per capita has a value of less than 100 for the average proportion of schools with basic sanitation*. 
+
+ 
+```{r}
+#| echo: false
+#| include: false
+library(ggplot2)
+library(dplyr)
+library(maps)
+ install.packages("countrycode") # Install the package
+library(countrycode) # Load the package
+
+# Load data
+indicator1 <- read.csv("unicef_indicator_1.csv")
+metadata <- read.csv('unicef_metadata.csv')
+ 
+colnames(metadata)[8] <- 'gdp_val'
+ 
+metadata <- metadata %>%
+  filter(gdp_val != "NA")
+
+sanitization_df <- indicator1 %>% 
+  group_by(country) %>% 
+  summarize(avg_proportion_of_schools_with_basic_sanitation = mean(obs_value))
+
+gdp_df <- metadata %>% 
+  group_by(country) %>% 
+  summarize(avg_gdp_per_capita = mean(gdp_val))
+
+
+
+res <- full_join(sanitization_df, gdp_df, by = c("country"))
+
+res <- res %>%
+  filter(avg_gdp_per_capita != "NA")%>%
+  filter(avg_proportion_of_schools_with_basic_sanitation != "NA")
+
+res$continent <- countrycode(sourcevar = res$country, origin = "country.name", destination = "continent")
+
+
+result <- ggplot(res)+
+  aes(x = avg_proportion_of_schools_with_basic_sanitation, y = avg_gdp_per_capita,group ="continent")+
+  geom_point(aes(color = continent)) +
+  geom_smooth(method = "lm", se = FALSE)+
+  #geom_point()+
+  #geom_smooth(method = "lm", se = FALSE)+
+  theme_bw()
+
+ 
+```
+ 
+```{r}
+#| echo: false
+result
+```
+## Time Series Chart
+
+The time series chart below identifies the *positive correlation* between the avg life expectancy and avg proportion of schools with basic sanitation. Here *Value 1 is avg proportion of schools with basic sanitation and value 2 is avg life expectancy* 
+
+ 
+```{r}
+#| echo: false
+#| include: false
+library(ggplot2)
+library(dplyr)
+library(maps)
+ 
+# Load data
+indicator1 <- read.csv("unicef_indicator_1.csv")
+metadata <- read.csv('unicef_metadata.csv')
+ 
+metadata <- read.csv('Time series chart.csv')
+ 
+ 
+ 
+colnames(metadata)[1] <- 'life_expectancy'
+colnames(metadata)[3] <- 'avg_proportion_of_schools_with_basic_sanitation'
+ 
+ 
+res <- ggplot(metadata, aes(x = year)) +
+  geom_line(aes(y = avg_proportion_of_schools_with_basic_sanitation, color = "Value 1")) +
+  geom_line(aes(y = life_expectancy, color = "Value 2")) +
+  labs(title = "Line Charts of Two Variables Over Time", x = "Year", y = "Value") +
+  ylim(0, 200) +
+  theme_bw() +
+  scale_color_manual(name = "", values = c("Value 1" = "blue", "Value 2" = "red"))
+ 
+```
+ 
+```{r}
+#| echo: false
+res
+```
+## Bar chart
+
+From the below bar chart, it can be understood that the *most developed continents have a higher proportion of schools with basic sanitation*.   
+
+ 
+```{r}
+#| echo: false
+#| include: false
+library(ggplot2)
+library(dplyr)
+library(maps)
+library(countrycode)
+ 
+# Load data
+indicator1 <- read.csv("unicef_indicator_1.csv")
+colnames(indicator1)
+ 
+indicator1$continent <- countrycode(sourcevar = indicator1$country, origin = "country.name", destination = "continent")
+ 
+grouped_data <- indicator1 %>%
+  group_by(continent) %>%
+  summarize(avg_proportion_of_schools_with_basic_sanitation = mean(obs_value))
+ 
+res <- grouped_data %>%
+  ggplot(aes(continent, avg_proportion_of_schools_with_basic_sanitation, fill = continent)) +
+  geom_col()
+ 
+```
+ 
+```{r}
+#| echo: false
+res
+```
+ 
+## Conclusion: 
+To sum up, this report uses
+
+1. World map chart
+
+2. Scatter plot with regression line
+
+3. Time series chart
+
+4. Bar chart
+
+***to raise awareness among the public on the world issue: proportion of schools with basic sanitation***.
+   
+ 
